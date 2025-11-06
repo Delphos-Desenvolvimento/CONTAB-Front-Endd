@@ -119,8 +119,6 @@ const ContactItem = ({ icon, text }: { icon: React.ReactNode; text: string }) =>
 const Footer = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
-  const [email, setEmail] = useState('');
-
   const footerLinks = [
     {
       title: 'Empresa',
@@ -177,13 +175,6 @@ const Footer = () => {
       text: 'Seg-Sex: 9h às 18h',
     },
   ];
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Lógica de inscrição na newsletter
-    console.log('Email cadastrado:', email);
-    setEmail('');
-  };
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -284,167 +275,91 @@ const Footer = () => {
             </Grid>
           ))}
 
-          {/* Newsletter */}
-          <Grid item xs={12} md={4}>
-            <Typography
-              variant="h6"
-              sx={{
-                color: '#64b5f6',
-                fontWeight: 700,
-                mb: 3,
-                position: 'relative',
-                '&:after': {
-                  content: '""',
-                  position: 'absolute',
-                  bottom: -8,
-                  left: 0,
-                  width: '40px',
-                  height: '3px',
-                  background: '#64b5f6',
-                  borderRadius: '2px',
-                },
-              }}
-            >
-              Newsletter
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 3, color: 'rgba(255, 255, 255, 0.9)' }}>
-              Inscreva-se para receber nossas últimas notícias e atualizações.
-            </Typography>
-            <Box component="form" onSubmit={handleSubscribe} noValidate>
-              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  variant="outlined"
-                  placeholder="Seu e-mail"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      color: 'white',
-                      '& fieldset': {
-                        borderColor: 'rgba(255, 255, 255, 0.2)',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'primary.main',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: 'primary.main',
-                      },
-                    },
-                    '& .MuiInputBase-input::placeholder': {
-                      color: 'rgba(255, 255, 255, 0.6)',
-                      opacity: 1,
-                    },
-                  }}
-                />
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  sx={{
-                    minWidth: '48px',
-                    px: 2,
-                    '&:hover': {
-                      boxShadow: '0 5px 15px rgba(26, 35, 126, 0.3)',
-                    },
-                  }}
-                >
-                  <Send size={18} />
-                </Button>
-              </Box>
+          <Divider sx={{ my: 6, borderColor: 'divider' }} />
+
+          {/* Rodapé inferior */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                {new Date().getFullYear()}
+              </Typography>
+              <Box 
+                component="img"
+                src="/images/Logo_sem_fundo_Contab[1].png"
+                alt="Contab"
+                sx={{
+                  height: 20,
+                  width: 'auto',
+                  maxWidth: '80px',
+                  objectFit: 'contain',
+                  display: 'inline-block',
+                  verticalAlign: 'middle',
+                  mx: 0.5
+                }}
+              />
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                . Todos os direitos reservados.
+              </Typography>
             </Box>
-            <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
-              Nós respeitamos sua privacidade. Cancele a inscrição a qualquer momento.
-            </Typography>
-          </Grid>
+            
+            <Box sx={{ display: 'flex', gap: 3 }}>
+              <Link
+                component={RouterLink}
+                to="/politica-privacidade"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  textDecoration: 'none',
+                  fontSize: '0.85rem',
+                  transition: 'color 0.3s ease',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                Política de Privacidade
+              </Link>
+              <Link
+                component={RouterLink}
+                to="/termos-uso"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  textDecoration: 'none',
+                  fontSize: '0.85rem',
+                  transition: 'color 0.3s ease',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                Termos de Uso
+              </Link>
+              <Link
+                component={RouterLink}
+                to="/cookies"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  textDecoration: 'none',
+                  fontSize: '0.85rem',
+                  transition: 'color 0.3s ease',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                Política de Cookies
+              </Link>
+            </Box>
+          </Box>
         </Grid>
 
-        <Divider sx={{ my: 6, borderColor: 'divider' }} />
-
-        {/* Rodapé inferior */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-              © {new Date().getFullYear()}
-            </Typography>
-            <Box 
-              component="img"
-              src="/images/Logo_sem_fundo_Contab[1].png"
-              alt="Contab"
-              sx={{
-                height: 20,
-                width: 'auto',
-                maxWidth: '80px',
-                objectFit: 'contain',
-                display: 'inline-block',
-                verticalAlign: 'middle',
-                mx: 0.5
-              }}
-            />
-            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-              . Todos os direitos reservados.
-            </Typography>
-          </Box>
-          
-          <Box sx={{ display: 'flex', gap: 3 }}>
-            <Link
-              component={RouterLink}
-              to="/politica-privacidade"
-              sx={{
-                color: 'rgba(255, 255, 255, 0.7)',
-                textDecoration: 'none',
-                fontSize: '0.85rem',
-                transition: 'color 0.3s ease',
-                '&:hover': {
-                  color: 'primary.main',
-                },
-              }}
-            >
-              Política de Privacidade
-            </Link>
-            <Link
-              component={RouterLink}
-              to="/termos-uso"
-              sx={{
-                color: 'rgba(255, 255, 255, 0.7)',
-                textDecoration: 'none',
-                fontSize: '0.85rem',
-                transition: 'color 0.3s ease',
-                '&:hover': {
-                  color: 'primary.main',
-                },
-              }}
-            >
-              Termos de Uso
-            </Link>
-            <Link
-              component={RouterLink}
-              to="/cookies"
-              sx={{
-                color: 'rgba(255, 255, 255, 0.7)',
-                textDecoration: 'none',
-                fontSize: '0.85rem',
-                transition: 'color 0.3s ease',
-                '&:hover': {
-                  color: 'primary.main',
-                },
-              }}
-            >
-              Política de Cookies
-            </Link>
-          </Box>
-        </Box>
       </Container>
 
       {/* Botão de voltar ao topo */}

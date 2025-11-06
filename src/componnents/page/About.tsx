@@ -251,11 +251,13 @@ function About() {
 
   return (
     <Box 
+      id="sobre"
       component="section"
       sx={{ 
         position: 'relative',
         overflow: 'hidden',
         py: { xs: 8, md: 12 },
+        scrollMarginTop: '80px', // Altura do header fixo
       }}
     >
       {/* Elemento decorativo */}
@@ -345,8 +347,11 @@ function About() {
           </Grid>
         </Box>
 
-        {/* Seção de Soluções */}
-        <Box sx={{ mt: { xs: 6, md: 12 } }}>
+        {/* Seção Nossas Soluções */}
+        <Box id="solucoes" sx={{ 
+          mb: { xs: 8, md: 12 },
+          scrollMarginTop: '80px' // Altura do header fixo
+        }}>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}

@@ -8,8 +8,11 @@ import {
   Button, 
   Typography, 
   Paper, 
-  Alert
+  Alert,
+  IconButton,
+  InputAdornment
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 interface LocationState {
   from?: {
@@ -23,6 +26,12 @@ export default function Login() {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [apiStatus, setApiStatus] = useState<'idle' | 'checking' | 'error'>('idle');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+
+  const handleClickShowPassword = () => setShowPassword((show) => !show);
+  const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+  };
   const navigate: NavigateFunction = useNavigate();
   const location = useLocation();
 
@@ -219,12 +228,40 @@ export default function Login() {
             fullWidth
             name="password"
             label="Senha"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             id="password"
             autoComplete="current-password"
             value={password}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
             disabled={loading}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={handleClickShowPassword}
+                    onMouseDown={handleMouseDownPassword}
+                    edge="end"
+                    disabled={loading}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'transparent',
+                      },
+                      '& .MuiSvgIcon-root': {
+                        color: 'rgba(0, 0, 0, 0.6)',
+                        '&:hover': {
+                          color: 'primary.main',
+                        },
+                      },
+                      padding: '4px',
+                      marginRight: '-4px',
+                    }}
+                  >
+                    {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
           
           <Button

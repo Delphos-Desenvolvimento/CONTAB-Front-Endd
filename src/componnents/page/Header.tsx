@@ -80,16 +80,45 @@ const MenuButton = styled(Button)<ButtonProps & { component?: React.ElementType 
   },
 }));
 
+// Função para rolagem suave
+const scrollToSection = (e: React.MouseEvent, sectionId: string) => {
+  e.preventDefault();
+  const element = document.getElementById(sectionId);
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth' });
+  } else {
+    // Se o elemento não for encontrado, navega para a rota
+    window.location.href = `/${sectionId}`;
+  }
+};
+
 // Itens do menu principal
 const menuItems = [
-    { title: 'Sobre', path: '/sobre' },
+    { 
+      title: 'Sobre', 
+      path: '/#sobre',
+      onClick: (e: React.MouseEvent) => scrollToSection(e, 'sobre')
+    },
     {
         title: 'Soluções',
-        path: '/solucoes',
+        path: '/#solucoes',
+        onClick: (e: React.MouseEvent) => scrollToSection(e, 'solucoes'),
         submenu: [
-            { title: 'Prefeitura e Gestão', path: '/solucoes/prefeitura' },
-            { title: 'Saúde', path: '/solucoes/saude' },
-            { title: 'Educação', path: '/solucoes/educacao' },
+            { 
+              title: 'Prefeitura e Gestão', 
+              path: '/solucoes/prefeitura',
+              onClick: (e: React.MouseEvent) => {}
+            },
+            { 
+              title: 'Saúde', 
+              path: '/solucoes/saude',
+              onClick: (e: React.MouseEvent) => {}
+            },
+            { 
+              title: 'Educação', 
+              path: '/solucoes/educacao',
+              onClick: (e: React.MouseEvent) => {}
+            },
         ],
     },
     {
@@ -100,16 +129,6 @@ const menuItems = [
             { title: 'Submenu Tech 2', path: '/tecnologia/2' },
         ],
     },
-    { title: 'Carreira', path: '/carreira' },
-    {
-        title: 'Conteúdos',
-        path: '/conteudos',
-        submenu: [
-            { title: 'Blog', path: '/blog' },
-            { title: 'Cases', path: '/cases' },
-        ],
-    },
-    { title: 'Eventos', path: '/eventos' },
 ];
 
 // Menu móvel removido - não está sendo utilizado
@@ -202,9 +221,14 @@ function Header() {
                     {item.submenu ? (
                       <>
                         <MenuButton
-                          onClick={handleMenuOpen}
+                          onClick={(e) => {
+                            if (item.onClick) {
+                              item.onClick(e);
+                            }
+                            handleMenuOpen(e);
+                          }}
                           endIcon={<ChevronDown size={16} style={{ marginLeft: 4 }} />}
-                          className={location.pathname.startsWith(item.path) ? 'active' : ''}
+                          className={location.pathname.startsWith(item.path.replace('/#', '/')) ? 'active' : ''}
                         >
                           {item.title}
                         </MenuButton>
@@ -269,12 +293,13 @@ function Header() {
                       </>
                     ) : (
                       <Box 
-                        component={RouterLink}
-                        to={item.path}
+                        component="a"
+                        href={item.path}
+                        onClick={item.onClick}
                         sx={{ textDecoration: 'none' }}
                       >
                         <MenuButton
-                          className={location.pathname === item.path ? 'active' : ''}
+                          className={location.pathname === item.path.replace('/#', '/') ? 'active' : ''}
                         >
                           {item.title}
                         </MenuButton>
@@ -282,31 +307,39 @@ function Header() {
                     )}
                   </div>
                 ))}
-              </Box>
 
               {/* Botões de ação */}
               <Box sx={{ display: 'flex', alignItems: 'center', ml: { xs: 1, md: 2 } }}>
                 <Button
-                  component={RouterLink}
-                  to="/contato"
+                  component="a"
+                  href="https://api.whatsapp.com/send/?phone=%2B558695541237&text&type=phone_number&app_absent=0"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   variant="outlined"
                   startIcon={<Phone size={14} />}
                   sx={{
-                    color: 'primary.main',
-                    borderColor: 'primary.main',
-                    fontWeight: 600,
-                    borderRadius: '50px',
+                    ml: 1,
+                    borderRadius: '12px',
                     textTransform: 'none',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    px: 2.5,
+                    py: 1,
+                    borderWidth: '2px',
                     '&:hover': {
-                      backgroundColor: 'primary.main',
-                      color: 'white',
-                      borderColor: 'primary.main',
+                      borderWidth: '2px',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(41, 121, 255, 0.2)',
+                      backgroundColor: 'rgba(37, 211, 102, 0.05)',
+                      borderColor: '#25D366',
+                      color: '#25D366',
                     },
                   }}
                 >
                   Contato
                 </Button>
               </Box>
+            </Box>
           </Toolbar>
         </Container>
 
