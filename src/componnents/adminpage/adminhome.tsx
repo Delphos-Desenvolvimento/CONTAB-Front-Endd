@@ -261,6 +261,7 @@ export default function AdminHome() {
   });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
@@ -276,7 +277,11 @@ export default function AdminHome() {
       if (updatedNews.id) {
         // Atualiza notícia existente
         const { id, ...updateData } = toApiNewsItem(updatedNews);
-        const updated = await NewsService.update(id!, updateData);
+        const updated = await NewsService.update(
+          id!, 
+          updateData,
+          selectedImageFile ? [selectedImageFile] : undefined
+        );
         
         setActiveNews(prevNews => 
           prevNews.map(item => item.id === updated.id ? toLocalNewsItem(updated) : item)
@@ -289,10 +294,13 @@ export default function AdminHome() {
         });
       } else {
         // Cria nova notícia
-        const newNews = await NewsService.create({
-          ...toApiNewsItem(updatedNews),
-          date: new Date().toISOString().split('T')[0]
-        });
+        const newNews = await NewsService.create(
+          {
+            ...toApiNewsItem(updatedNews),
+            date: new Date().toISOString().split('T')[0]
+          },
+          selectedImageFile ? [selectedImageFile] : undefined
+        );
         
         setActiveNews(prevNews => [toLocalNewsItem(newNews), ...prevNews]);
         
@@ -303,6 +311,8 @@ export default function AdminHome() {
         });
       }
       setOpenNewsDialog(false);
+      setSelectedImageFile(null);
+      setCurrentNews(prev => ({ ...prev, imagePreview: '' }));
     } catch (error) {
       console.error('Erro ao salvar notícia:', error);
       setSnackbar({
@@ -397,6 +407,7 @@ export default function AdminHome() {
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setCurrentNews(prev => ({

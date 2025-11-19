@@ -1,5 +1,11 @@
 import api from '.';
 
+export interface NewsImage {
+  id?: number;
+  base64: string;
+  altText?: string;
+}
+
 export interface NewsItem {
   id?: number;
   title: string;
@@ -8,7 +14,16 @@ export interface NewsItem {
   status: 'rascunho' | 'publicada' | 'arquivada';
   date: string;
   views: number;
-  imageUrl?: string;
+  images?: NewsImage[];
+}
+
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 const NewsService = {
@@ -41,9 +56,13 @@ const NewsService = {
   /**
    * Cria uma nova notícia
    */
-  async create(newsData: Omit<NewsItem, 'id' | 'views'>): Promise<NewsItem> {
+  async create(newsData: Omit<NewsItem, 'id' | 'views' | 'images'>, imageFiles?: File[]): Promise<NewsItem> {
     try {
-      const response = await api.post<NewsItem>('/news', newsData);
+      const imagesBase64 = Array.isArray(imageFiles) && imageFiles.length > 0
+        ? await Promise.all(imageFiles.map(fileToDataUrl))
+        : undefined;
+      const payload = imagesBase64 ? { ...newsData, imagesBase64 } : { ...newsData };
+      const response = await api.post<NewsItem>('/news', payload);
       return response.data;
     } catch (error) {
       console.error('Erro ao criar notícia:', error);
@@ -54,9 +73,13 @@ const NewsService = {
   /**
    * Atualiza uma notícia existente (parcial)
    */
-  async update(id: number, newsData: Partial<NewsItem>): Promise<NewsItem> {
+  async update(id: number, newsData: Partial<NewsItem>, imageFiles?: File[]): Promise<NewsItem> {
     try {
-      const response = await api.patch<NewsItem>(`/news/${id}`, newsData);
+      const imagesBase64 = Array.isArray(imageFiles) && imageFiles.length > 0
+        ? await Promise.all(imageFiles.map(fileToDataUrl))
+        : undefined;
+      const payload = imagesBase64 ? { ...newsData, imagesBase64 } : { ...newsData };
+      const response = await api.patch<NewsItem>(`/news/${id}`, payload);
       return response.data;
     } catch (error) {
       console.error(`Erro ao atualizar notícia com ID ${id}:`, error);
