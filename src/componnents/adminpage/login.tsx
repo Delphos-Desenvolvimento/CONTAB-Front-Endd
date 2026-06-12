@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-const API_URL = import.meta.env.DEV
-  ? '/api'
-  : `${(import.meta.env.VITE_API_URL || '').replace(/\/$/, '')}/api`;
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import type { NavigateFunction } from 'react-router-dom';
+import { API_BASE_URL } from '../../API/baseUrl';
 import { 
   Box, 
   TextField, 
@@ -75,7 +73,7 @@ export default function Login() {
     try {
       console.log('Sending login request with:', { email: email.trim() });
       
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
