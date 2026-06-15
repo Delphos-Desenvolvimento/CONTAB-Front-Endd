@@ -18,15 +18,19 @@ import UsefulLinks from './componnents/page/UsefulLinks';
 import PublicLayout from './componnents/PublicLayout';
 import AccessibilityWidget from './componnents/common/AccessibilityWidget';
 
-// Componente de rota protegida
-// Componente de rota protegida
-// Componente de rota protegida
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const location = useLocation();
 
   useEffect(() => {
     const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        localStorage.removeItem('user');
+        setIsAuthenticated(false);
+        return;
+      }
+
       try {
         const locallyValid = isTokenValidLocal();
         if (locallyValid) {
@@ -36,8 +40,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         }
         await verifyToken();
         setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Token verification failed:', error);
+      } catch {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setIsAuthenticated(false);
