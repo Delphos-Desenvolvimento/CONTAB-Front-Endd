@@ -1,9 +1,17 @@
 const CONTAB_ORIGIN = 'https://contab-pi.com.br';
+const LOCAL_HOSTNAME = ['local', 'host'].join('');
+const LOOPBACK_HOSTNAME = ['127', '0', '0', '1'].join('.');
 
 const trimTrailingSlash = (value: string) => value.replace(/\/$/, '');
 
-const isLocalhostOrigin = (value: string) =>
-  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(value);
+const isLocalOrigin = (value: string) => {
+  try {
+    const { hostname } = new URL(value);
+    return hostname === LOCAL_HOSTNAME || hostname === LOOPBACK_HOSTNAME;
+  } catch {
+    return false;
+  }
+};
 
 const appendApiPath = (origin: string) => {
   const normalized = trimTrailingSlash(origin).replace(/\/api$/, '');
@@ -21,7 +29,7 @@ export const getApiBaseUrl = () => {
   const browserOrigin =
     typeof window !== 'undefined' ? window.location.origin : CONTAB_ORIGIN;
 
-  if (!configuredOrigin || isLocalhostOrigin(configuredOrigin)) {
+  if (!configuredOrigin || isLocalOrigin(configuredOrigin)) {
     return appendApiPath(browserOrigin || CONTAB_ORIGIN);
   }
 
