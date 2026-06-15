@@ -1,0 +1,20 @@
+<IfModule mod_rewrite.c>
+  Options -MultiViews
+  DirectoryIndex index.html
+  RewriteEngine On
+  RewriteBase /
+
+  # Keep backend API requests out of the React SPA fallback.
+  RewriteCond %{REQUEST_URI} ^/api(/|$) [NC]
+  RewriteRule ^ - [L]
+
+  # Serve existing files and folders normally.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Let React Router handle direct visits like /admin and /noticia/1.
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+ErrorDocument 404 /index.html
