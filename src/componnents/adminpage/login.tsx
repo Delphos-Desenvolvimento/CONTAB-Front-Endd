@@ -85,12 +85,23 @@ export default function Login() {
         })
       });
 
-      let data;
+      const raw = await response.text();
+      let data: { access_token?: string; user?: unknown; message?: string } = {};
+
+      if (raw.trim().startsWith('<')) {
+        throw new Error(
+          'A API retornou HTML em vez de JSON. O proxy /api no servidor precisa apontar para o backend na porta 3001.',
+        );
+      }
+
       try {
-        data = await response.json();
+        data = raw ? JSON.parse(raw) : {};
       } catch {
-        const text = await response.text();
-        console.error('Failed to parse JSON response:', { status: response.status, statusText: response.statusText, text });
+        console.error('Failed to parse JSON response:', {
+          status: response.status,
+          statusText: response.statusText,
+          raw,
+        });
         throw new Error('Resposta inválida do servidor');
       }
       

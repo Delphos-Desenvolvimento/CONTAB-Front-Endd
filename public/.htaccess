@@ -4,9 +4,9 @@
   RewriteEngine On
   RewriteBase /
 
-  # Proxy API requests to the NestJS backend.
+  # Never serve the React app for /api routes.
   RewriteCond %{REQUEST_URI} ^/api(/|$) [NC]
-  RewriteRule ^api/?(.*)$ http://127.0.0.1:3001/api/$1 [P,L]
+  RewriteRule ^api/?(.*)$ http://127.0.0.1:3001/api/$1 [P,L,NE]
 
   # Serve existing files and folders normally.
   RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -28,7 +28,9 @@
     Header set Expires "0"
   </FilesMatch>
 
-  <FilesMatch "\.(js|css)$">
-    Header set Cache-Control "public, max-age=0, must-revalidate"
+  <FilesMatch "index-d3394580\.js$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
   </FilesMatch>
 </IfModule>

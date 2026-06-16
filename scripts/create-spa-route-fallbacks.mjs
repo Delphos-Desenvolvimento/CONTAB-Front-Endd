@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const distDir = join(process.cwd(), 'dist');
@@ -23,18 +23,3 @@ for (const route of routes) {
 }
 
 console.log(`Created SPA fallbacks for ${routes.length} routes.`);
-
-const legacyBundleNames = ['index-d3394580.js'];
-const indexHtml = readFileSync(indexPath, 'utf8');
-const currentBundleMatch = indexHtml.match(/\/assets\/(index-[^"']+\.js)/);
-
-if (currentBundleMatch) {
-  const currentBundlePath = join(distDir, 'assets', currentBundleMatch[1]);
-
-  for (const legacyBundleName of legacyBundleNames) {
-    const legacyBundlePath = join(distDir, 'assets', legacyBundleName);
-    copyFileSync(currentBundlePath, legacyBundlePath);
-  }
-
-  console.log(`Created ${legacyBundleNames.length} legacy bundle alias.`);
-}
