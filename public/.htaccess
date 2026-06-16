@@ -4,9 +4,9 @@
   RewriteEngine On
   RewriteBase /
 
-  # Keep backend API requests out of the React SPA fallback.
+  # Proxy API requests to the NestJS backend.
   RewriteCond %{REQUEST_URI} ^/api(/|$) [NC]
-  RewriteRule ^ - [L]
+  RewriteRule ^api/?(.*)$ http://127.0.0.1:3001/api/$1 [P,L]
 
   # Serve existing files and folders normally.
   RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -17,4 +17,18 @@
   RewriteRule ^ index.html [L]
 </IfModule>
 
-ErrorDocument 404 /index.html
+<IfModule mod_proxy.c>
+  ProxyPreserveHost On
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+</IfModule>

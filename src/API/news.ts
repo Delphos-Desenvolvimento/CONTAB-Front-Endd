@@ -1,4 +1,5 @@
 import api, { apiPublic } from '.';
+import { asArray } from './response';
 
 export interface NewsImage {
   id?: number;
@@ -32,8 +33,8 @@ const NewsService = {
    */
   async getAll(params?: { status?: string }): Promise<NewsItem[]> {
     try {
-      const response = await apiPublic.get<NewsItem[]>('/news', { params });
-      return response.data;
+      const response = await apiPublic.get('/news', { params });
+      return asArray<NewsItem>(response.data);
     } catch (error) {
       console.error('Erro ao buscar notícias:', error);
       throw error;
@@ -130,10 +131,10 @@ const NewsService = {
    */
   async getByCategory(category: string): Promise<NewsItem[]> {
     try {
-      const response = await apiPublic.get<NewsItem[]>('/news', {
+      const response = await apiPublic.get('/news', {
         params: { category }
       });
-      return response.data;
+      return asArray<NewsItem>(response.data);
     } catch (error) {
       console.error(`Erro ao buscar notícias da categoria ${category}:`, error);
       throw error;

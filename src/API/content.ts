@@ -1,4 +1,5 @@
 import api from './index';
+import { asArray } from './response';
 
 // Types
 export interface AboutSection {
@@ -82,7 +83,7 @@ export const updateAboutSection = async (data: UpdateAboutDto): Promise<AboutSec
 // Statistics - Public
 export const getStatistics = async (): Promise<Statistic[]> => {
     const response = await api.get('/content/statistics');
-    return response.data;
+    return asArray<Statistic>(response.data);
 };
 
 // Statistics - Admin
@@ -118,7 +119,7 @@ export const reorderStatistics = async (items: Array<{ id: number; order: number
 // Solutions - Public
 export const getSolutions = async (): Promise<Solution[]> => {
     const response = await api.get('/content/solutions');
-    return response.data;
+    return asArray<Solution>(response.data);
 };
 
 // Solutions - Admin
@@ -176,7 +177,7 @@ export interface CreateLinkDto {
 // Links - Public
 export const getPublicLinks = async (): Promise<Link[]> => {
     const response = await api.get('/links');
-    return response.data;
+    return asArray<Link>(response.data);
 };
 
 // Links - Admin

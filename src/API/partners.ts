@@ -1,4 +1,5 @@
 import api from '.';
+import { asArray } from './response';
 
 export interface Partner {
     id: number;
@@ -42,10 +43,10 @@ const PartnersService = {
      */
     async getAll(activeOnly: boolean = true): Promise<Partner[]> {
         try {
-            const response = await api.get<Partner[]>('/partners', {
+            const response = await api.get('/partners', {
                 params: { activeOnly },
             });
-            return response.data;
+            return asArray<Partner>(response.data);
         } catch (error) {
             console.error('Erro ao buscar parceiros:', error);
             throw error;
