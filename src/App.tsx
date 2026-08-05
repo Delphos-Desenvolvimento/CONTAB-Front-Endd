@@ -15,6 +15,8 @@ import AllNewsPage from './componnents/page/AllNewsPage';
 import NewsDetailPage from './componnents/page/NewsDetailPage';
 import TeamPage from './componnents/page/TeamPage';
 import UsefulLinks from './componnents/page/UsefulLinks';
+import PrefeiturasPage from './componnents/page/PrefeiturasPage';
+import PrefeituraSistemasPage from './componnents/page/PrefeituraSistemasPage';
 import PublicLayout from './componnents/PublicLayout';
 import AccessibilityWidget from './componnents/common/AccessibilityWidget';
 
@@ -121,7 +123,9 @@ function App() {
                   <Route path="/noticia/:id" element={<NewsDetailPage />} />
                   <Route path="/equipe" element={<TeamPage />} />
                   <Route path="/links-uteis" element={<UsefulLinks />} />
-                  <Route path="/login" element={<Navigate to="/admin/login" replace />} />
+                  <Route path="/prefeituras" element={<PrefeiturasPage />} />
+                  <Route path="/prefeituras/:id" element={<PrefeituraSistemasPage />} />
+                  <Route path="/login" element={<Navigate to="/prefeituras" replace />} />
                 </Routes>
               </PublicLayout>
             }

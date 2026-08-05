@@ -11,6 +11,9 @@ if (!existsSync(indexPath)) {
 const routes = [
   'admin',
   'admin/login',
+  'admin/prefeituras',
+  'prefeituras',
+  'login',
   'noticias',
   'equipe',
   'links-uteis',

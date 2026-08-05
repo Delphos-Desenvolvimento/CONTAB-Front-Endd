@@ -8,6 +8,7 @@ import StatsService, { type StatsOverview } from '../../API/stats';
 import ContentAdminPage from '../page/admin/ContentAdminPage';
 import TeamAdminPage from '../page/admin/TeamAdminPage';
 import LinksAdminPage from '../page/admin/LinksAdminPage';
+import PrefeituraLinksAdminPage from '../page/admin/PrefeituraLinksAdminPage';
 import LogsAdminPage from '../page/admin/LogsAdminPage';
 import ProfileAdminPage from '../page/admin/ProfileAdminPage';
 import type { SelectChangeEvent } from '@mui/material/Select';
@@ -69,7 +70,8 @@ import {
   Handshake as HandshakeIcon,
   Link as LinkIcon,
   Group as GroupIcon,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  AccountBalance as PrefeituraIcon,
 } from '@mui/icons-material';
 import { History as HistoryIcon, Person as PersonIcon } from '@mui/icons-material';
 
@@ -121,7 +123,7 @@ export default function AdminHome() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    navigate('/login');
+    navigate('/admin/login');
   };
 
 
@@ -145,6 +147,7 @@ export default function AdminHome() {
           <ListItemLink to="/admin/noticias" icon={<ArticleIcon />} primary="Notícias" />
           <ListItemLink to="/admin/parceiros" icon={<HandshakeIcon />} primary="Parceiros" />
           <ListItemLink to="/admin/links-uteis" icon={<LinkIcon />} primary="Links Úteis" />
+          <ListItemLink to="/admin/prefeituras" icon={<PrefeituraIcon />} primary="Prefeituras" />
           <ListItemLink to="/admin/conteudo" icon={<DescriptionIcon />} primary="Conteúdo" />
           <ListItemLink to="/admin/equipe" icon={<GroupIcon />} primary="Nossa Equipe" />
           <ListItemLink to="/admin/logs" icon={<HistoryIcon />} primary="Logs" />
@@ -842,6 +845,7 @@ export default function AdminHome() {
               location.pathname.includes('parceiros') ? 'Parceiros' :
                 location.pathname.includes('conteudo') ? 'Conteúdo' :
                   location.pathname.includes('equipe') ? 'Nossa Equipe' :
+                    location.pathname.includes('prefeituras') ? 'Prefeituras' :
                     location.pathname.includes('links-uteis') ? 'Links Úteis' :
                       location.pathname.includes('logs') ? 'Logs' :
                       location.pathname.includes('perfil') ? 'Meu Perfil' :
@@ -861,6 +865,8 @@ export default function AdminHome() {
               </Typography>
               <LinksAdminPage />
             </Box>
+          ) : location.pathname.includes('/admin/prefeituras') ? (
+            <PrefeituraLinksAdminPage />
           ) : location.pathname.includes('/admin/noticias') ? (
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>

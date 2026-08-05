@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
-import { Phone, Link as LinkIcon } from 'lucide-react';
+import { Phone, Link as LinkIcon, Building2 } from 'lucide-react';
 
 // Componente simplificado sem efeito de scroll
 
@@ -314,6 +314,15 @@ function Header() {
               >
                 Contato
               </MenuButton>
+              <Box component={RouterLink} to="/prefeituras" sx={{ textDecoration: 'none' }}>
+                <MenuButton
+                  startIcon={<Building2 size={14} />}
+                  className={location.pathname.startsWith('/prefeituras') ? 'active' : ''}
+                  sx={{ ml: 1, boxShadow: 'none', '&:hover': { boxShadow: 'none' } }}
+                >
+                  Prefeituras
+                </MenuButton>
+              </Box>
             </Box>
           </Box>
         </Toolbar>

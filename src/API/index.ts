@@ -22,6 +22,8 @@ api.interceptors.request.use(
       '/content/statistics',
       '/content/solutions',
       '/links',
+      '/prefeitura-links',
+      '/login-page-links',
     ]);
     const isTeamPublic = path === '/team' && method === 'get';
     const isPartnersPublic = path === '/partners' && method === 'get';
