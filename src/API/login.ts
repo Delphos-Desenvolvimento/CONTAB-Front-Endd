@@ -14,18 +14,36 @@ interface LoginResponse {
   user: User;
 }
 
+const AUTH_KEYS = [
+  'token',
+  'user',
+  'userRole',
+  'user_id',
+  'userEmail',
+  'userName',
+  'authToken',
+] as const;
+
+function persistSession(data: LoginResponse) {
+  localStorage.setItem('token', data.access_token);
+  localStorage.setItem('user', JSON.stringify(data.user));
+  localStorage.setItem('userRole', String(data.user.role));
+  localStorage.setItem('user_id', String(data.user.id));
+  localStorage.setItem('userEmail', String(data.user.user));
+}
+
 export const login = async (username: string, password: string): Promise<LoginResponse> => {
   try {
-    console.log('Attempting login with:', { username });
-
-    const response = await axios.post(`${API_URL}/login`, {
-      email: username,
-      password,
-    }, {
-      validateStatus: (status) => status < 500
-    });
-
-    console.log('Login response:', response.data);
+    const response = await axios.post(
+      `${API_URL}/login`,
+      {
+        email: username,
+        password,
+      },
+      {
+        validateStatus: (status) => status < 500,
+      },
+    );
 
     if (response.status === 401) {
       throw new Error('Invalid username or password');
@@ -35,14 +53,7 @@ export const login = async (username: string, password: string): Promise<LoginRe
       throw new Error('Invalid response from server');
     }
 
-    // Store token and user data in localStorage
-    localStorage.setItem('token', response.data.access_token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    localStorage.setItem('userRole', String(response.data.user.role));
-    localStorage.setItem('user_id', String(response.data.user.id));
-    localStorage.setItem('userEmail', String(response.data.user.user));
-    console.log('User logged in successfully:', response.data.user);
-
+    persistSession(response.data);
     return response.data;
   } catch (error: unknown) {
     let errorMessage = 'Login failed';
@@ -51,28 +62,31 @@ export const login = async (username: string, password: string): Promise<LoginRe
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
-    console.error('Login error:', errorMessage);
     throw new Error(errorMessage);
   }
 };
 
-export const register = async (username: string, password: string, role = 'user'): Promise<LoginResponse> => {
+export const register = async (
+  username: string,
+  password: string,
+  role = 'USER',
+): Promise<{ message: string; user: User }> => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('Admin authentication required');
+  }
   try {
-    const response = await axios.post(`${API_URL}/register`, {
-      email: username,
-      password,
-      role,
-    });
-
-    // Auto-login after registration
-    if (response.data.user && response.data.access_token) {
-      localStorage.setItem('token', response.data.access_token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      localStorage.setItem('userRole', String(response.data.user.role));
-      localStorage.setItem('user_id', String(response.data.user.id));
-      localStorage.setItem('userEmail', String(response.data.user.user));
-    }
-
+    const response = await axios.post(
+      `${API_URL}/register`,
+      {
+        email: username,
+        password,
+        role,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
     return response.data;
   } catch (error: unknown) {
     let errorMessage = 'Registration failed';
@@ -81,13 +95,14 @@ export const register = async (username: string, password: string, role = 'user'
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
-    console.error('Registration error:', errorMessage);
     throw new Error(errorMessage);
   }
 };
 
 export const logout = (): void => {
-  localStorage.removeItem('user');
+  for (const key of AUTH_KEYS) {
+    localStorage.removeItem(key);
+  }
 };
 
 export const getCurrentUser = (): User | null => {
@@ -96,12 +111,12 @@ export const getCurrentUser = (): User | null => {
 };
 
 export const isAuthenticated = (): boolean => {
-  return !!getCurrentUser();
+  return !!localStorage.getItem('token') && !!getCurrentUser();
 };
 
 export const isAdmin = (): boolean => {
   const user = getCurrentUser();
-  return user ? user.role === 'admin' : false;
+  return user ? user.role?.toUpperCase() === 'ADMIN' : false;
 };
 
 export const verifyToken = async (): Promise<User> => {
@@ -113,8 +128,8 @@ export const verifyToken = async (): Promise<User> => {
   try {
     const response = await axios.get(`${API_URL}/profile`, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
     return response.data;
   } catch {

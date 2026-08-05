@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
-          entryFileNames: 'assets/index-prefeituras.js',
+          entryFileNames: 'assets/[name]-[hash].js',
           chunkFileNames: 'assets/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash][extname]',
           // Keep React out of library chunks — splitting recharts/d3 away from React

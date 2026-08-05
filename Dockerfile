@@ -28,28 +28,22 @@ ENV VITE_API_URL=$VITE_API_URL \
 # Skip tsc in image builds — typecheck locally / CI via `npm run typecheck`
 RUN npm run build:docker
 
-# ---- runtime (Apache) ----
-FROM httpd:2.4-alpine AS runtime
+# ---- runtime (Nginx) ----
+FROM nginx:1.27-alpine AS runtime
 
-RUN apk add --no-cache curl \
-  && sed -i \
-    -e 's/^#\(LoadModule .*mod_rewrite.so\)/\1/' \
-    -e 's/^#\(LoadModule .*mod_proxy.so\)/\1/' \
-    -e 's/^#\(LoadModule .*mod_proxy_http.so\)/\1/' \
-    -e 's/^#\(LoadModule .*mod_headers.so\)/\1/' \
-    /usr/local/apache2/conf/httpd.conf
+RUN apk add --no-cache curl
 
-COPY apache/httpd.conf /usr/local/apache2/conf/httpd.conf
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# Wipe previous assets so removed chunks (e.g. broken charts-*.js) cannot linger
-RUN rm -rf /usr/local/apache2/htdocs/*
-COPY --from=build /app/dist/ /usr/local/apache2/htdocs/
+# Wipe previous assets so removed chunks cannot linger
+RUN rm -rf /usr/share/nginx/html/*
+COPY --from=build /app/dist/ /usr/share/nginx/html/
 
-RUN rm -f /usr/local/apache2/htdocs/.htaccess || true
+RUN rm -f /usr/share/nginx/html/.htaccess || true
 
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD curl -fsS http://127.0.0.1/ >/dev/null || exit 1
 
-CMD ["httpd-foreground"]
+CMD ["nginx", "-g", "daemon off;"]

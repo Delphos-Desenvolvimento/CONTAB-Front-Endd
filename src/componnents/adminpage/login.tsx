@@ -71,18 +71,16 @@ export default function Login() {
     setLoading(true);
 
     try {
-      console.log('Sending login request with:', { email: email.trim() });
-      
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
         body: JSON.stringify({
           email: email.trim(),
-          password: password
-        })
+          password: password,
+        }),
       });
 
       const raw = await response.text();
@@ -97,41 +95,23 @@ export default function Login() {
       try {
         data = raw ? JSON.parse(raw) : {};
       } catch {
-        console.error('Failed to parse JSON response:', {
-          status: response.status,
-          statusText: response.statusText,
-          raw,
-        });
         throw new Error('Resposta inválida do servidor');
       }
-      
-      console.log('Login response:', {
-        status: response.status,
-        statusText: response.statusText,
-        data
-      });
-      
+
       if (!response.ok) {
         throw new Error(data.message || `Erro no login: ${response.status}`);
       }
-      
-      // Store the JWT token and user data
+
       if (!data.access_token) {
         throw new Error('Token de autenticação não recebido');
       }
-      
+
       localStorage.setItem('token', data.access_token);
-      
-      // Store user data if available
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
-      
-      console.log('Login successful, token stored');
-      
-      // Redirect to admin dashboard after successful login
+
       const redirectTo = from || '/admin';
-      console.log('Redirecting to:', redirectTo);
       navigate(redirectTo, { replace: true });
     } catch (err: unknown) {
       let errorMessage = 'Ocorreu um erro ao fazer login. Verifique suas credenciais.';
@@ -141,7 +121,6 @@ export default function Login() {
         const anyErr = err as { response?: { data?: { message?: string } } };
         errorMessage = anyErr.response?.data?.message || errorMessage;
       }
-      console.error('Login error:', errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
