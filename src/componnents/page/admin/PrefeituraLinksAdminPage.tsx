@@ -23,19 +23,26 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { Add, Delete, Edit } from '@mui/icons-material'
+import { Add, Delete, Edit, Refresh, Search } from '@mui/icons-material'
 import {
   createPrefeituraLink,
   deletePrefeituraLink,
+  formatCnpj,
   getAdminPrefeituraLinks,
+  lookupCnpja,
+  refreshPrefeituraCnpja,
   updatePrefeituraLink,
+  type CnpjaLookupResult,
   type CreatePrefeituraLinkDto,
   type PrefeituraLink,
 } from '../../../API/prefeituraLinks'
 
-const emptyForm = (): CreatePrefeituraLinkDto => ({
-  title: '',
-  url: '',
+type FormState = CreatePrefeituraLinkDto & { passwordConfirm?: string }
+
+const emptyForm = (): FormState => ({
+  cnpj: '',
+  password: '',
+  passwordConfirm: '',
   description: '',
   imageBase64: '',
   order: 0,
@@ -48,12 +55,33 @@ const emptyForm = (): CreatePrefeituraLinkDto => ({
   urlIa: '',
 })
 
+/** Avoid Chrome autofill green/yellow paint and label collisions in the dialog. */
+const dialogFieldSx = {
+  mb: 2,
+  width: '100%',
+  '& input': {
+    WebkitTextFillColor: 'inherit',
+  },
+  '& input:-webkit-autofill, & input:-webkit-autofill:hover, & input:-webkit-autofill:focus': {
+    WebkitTextFillColor: 'inherit',
+    transition: 'background-color 99999s ease-in-out 0s',
+    boxShadow: '0 0 0 1000px #fff inset',
+  },
+}
+
+const truncate = (value: string | null | undefined, max = 120) => {
+  if (!value) return ''
+  return value.length > max ? `${value.slice(0, max - 1)}…` : value
+}
+
 const PrefeituraLinksAdminPage: React.FC = () => {
   const [links, setLinks] = useState<PrefeituraLink[]>([])
   const [loading, setLoading] = useState(true)
   const [openDialog, setOpenDialog] = useState(false)
   const [editing, setEditing] = useState<PrefeituraLink | null>(null)
-  const [formData, setFormData] = useState<CreatePrefeituraLinkDto>(emptyForm())
+  const [formData, setFormData] = useState<FormState>(emptyForm())
+  const [lookup, setLookup] = useState<CnpjaLookupResult | null>(null)
+  const [lookingUp, setLookingUp] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -74,15 +102,19 @@ const PrefeituraLinksAdminPage: React.FC = () => {
 
   const openCreate = () => {
     setEditing(null)
+    setLookup(null)
     setFormData({ ...emptyForm(), order: links.length })
     setOpenDialog(true)
   }
 
   const openEdit = (link: PrefeituraLink) => {
     setEditing(link)
+    setLookup(null)
     setFormData({
+      cnpj: formatCnpj(link.cnpj || ''),
+      password: '',
+      passwordConfirm: '',
       title: link.title,
-      url: link.url || '',
       description: link.description || '',
       imageBase64: link.imageBase64 || '',
       order: link.order,
@@ -97,29 +129,89 @@ const PrefeituraLinksAdminPage: React.FC = () => {
     setOpenDialog(true)
   }
 
+  const handleLookup = async () => {
+    setError('')
+    setLookingUp(true)
+    try {
+      const data = await lookupCnpja(formData.cnpj)
+      setLookup(data)
+      setFormData((p) => ({
+        ...p,
+        cnpj: formatCnpj(data.cnpj),
+        title: data.title,
+        description: truncate(data.description || '', 280),
+      }))
+    } catch (err: unknown) {
+      setLookup(null)
+      const message =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data
+              ?.message
+          : null
+      setError(message || 'Falha ao consultar CNPJá')
+    } finally {
+      setLookingUp(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.title.trim()) {
-      setError('Nome da prefeitura é obrigatório')
-      return
+    setError('')
+
+    if (!editing) {
+      if (formData.cnpj.replace(/\D/g, '').length !== 14) {
+        setError('CNPJ inválido')
+        return
+      }
+      if (!formData.password || formData.password.length < 6) {
+        setError('Senha deve ter ao menos 6 caracteres')
+        return
+      }
+      if (formData.password !== formData.passwordConfirm) {
+        setError('As senhas não coincidem')
+        return
+      }
+      if (!lookup) {
+        setError('Consulte o CNPJ no CNPJá antes de salvar')
+        return
+      }
+    } else if (formData.password) {
+      if (formData.password.length < 6) {
+        setError('Senha deve ter ao menos 6 caracteres')
+        return
+      }
+      if (formData.password !== formData.passwordConfirm) {
+        setError('As senhas não coincidem')
+        return
+      }
     }
+
     if (!formData.allowPca && !formData.allowRetencao && !formData.allowIa) {
       setError('Libere ao menos um sistema (PCA, Retenção ou I.A)')
       return
     }
+
     try {
       if (editing) {
-        await updatePrefeituraLink(editing.id, formData)
+        const { passwordConfirm: _, cnpj: __, ...patch } = formData
+        if (!patch.password) delete patch.password
+        await updatePrefeituraLink(editing.id, patch)
         setSuccess('Prefeitura atualizada!')
       } else {
-        await createPrefeituraLink(formData)
-        setSuccess('Prefeitura criada!')
+        const { passwordConfirm: _, ...payload } = formData
+        await createPrefeituraLink(payload)
+        setSuccess('Prefeitura cadastrada via CNPJá!')
       }
       setOpenDialog(false)
       await fetchLinks()
       setTimeout(() => setSuccess(''), 2500)
-    } catch {
-      setError('Erro ao salvar prefeitura')
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data
+              ?.message
+          : null
+      setError(message || 'Erro ao salvar prefeitura')
     }
   }
 
@@ -132,6 +224,17 @@ const PrefeituraLinksAdminPage: React.FC = () => {
       setTimeout(() => setSuccess(''), 2500)
     } catch {
       setError('Erro ao excluir prefeitura')
+    }
+  }
+
+  const handleRefresh = async (id: number) => {
+    try {
+      await refreshPrefeituraCnpja(id)
+      setSuccess('Dados atualizados pelo CNPJá')
+      await fetchLinks()
+      setTimeout(() => setSuccess(''), 2500)
+    } catch {
+      setError('Falha ao atualizar via CNPJá')
     }
   }
 
@@ -170,11 +273,11 @@ const PrefeituraLinksAdminPage: React.FC = () => {
               Prefeituras
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Cadastro em /prefeituras — cada ícone abre a página de sistemas liberados
+              Cadastro por CNPJ (CNPJá) · login público em /prefeituras
             </Typography>
           </Box>
           <Button variant="contained" startIcon={<Add />} onClick={openCreate}>
-            Adicionar prefeitura
+            Adicionar por CNPJ
           </Button>
         </Box>
 
@@ -199,9 +302,9 @@ const PrefeituraLinksAdminPage: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Imagem</TableCell>
-                  <TableCell>Título</TableCell>
+                  <TableCell>CNPJ</TableCell>
+                  <TableCell>Razão social</TableCell>
                   <TableCell>Sistemas</TableCell>
-                  <TableCell>Ordem</TableCell>
                   <TableCell align="center">Status</TableCell>
                   <TableCell align="center">Ações</TableCell>
                 </TableRow>
@@ -228,21 +331,29 @@ const PrefeituraLinksAdminPage: React.FC = () => {
                           '—'
                         )}
                       </TableCell>
-                      <TableCell>{link.title}</TableCell>
+                      <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                        {formatCnpj(link.cnpj || '')}
+                      </TableCell>
+                      <TableCell>
+                        <Typography fontWeight={600}>{link.tradeName || link.title}</Typography>
+                        {link.tradeName && (
+                          <Typography variant="caption" color="text.secondary">
+                            {link.title}
+                          </Typography>
+                        )}
+                        {(link.city || link.state) && (
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            {[link.city, link.state].filter(Boolean).join('/')}
+                          </Typography>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {systemChips(link).length === 0 ? (
-                            <Typography variant="caption" color="text.secondary">
-                              Nenhum
-                            </Typography>
-                          ) : (
-                            systemChips(link).map((name) => (
-                              <Chip key={name} size="small" label={name} variant="outlined" />
-                            ))
-                          )}
+                          {systemChips(link).map((name) => (
+                            <Chip key={name} size="small" label={name} variant="outlined" />
+                          ))}
                         </Box>
                       </TableCell>
-                      <TableCell>{link.order}</TableCell>
                       <TableCell align="center">
                         <Chip
                           size="small"
@@ -256,10 +367,22 @@ const PrefeituraLinksAdminPage: React.FC = () => {
                         />
                       </TableCell>
                       <TableCell align="center">
+                        <IconButton
+                          color="primary"
+                          size="small"
+                          title="Atualizar CNPJá"
+                          onClick={() => void handleRefresh(link.id)}
+                        >
+                          <Refresh />
+                        </IconButton>
                         <IconButton color="primary" size="small" onClick={() => openEdit(link)}>
                           <Edit />
                         </IconButton>
-                        <IconButton color="error" size="small" onClick={() => void handleDelete(link.id)}>
+                        <IconButton
+                          color="error"
+                          size="small"
+                          onClick={() => void handleDelete(link.id)}
+                        >
                           <Delete />
                         </IconButton>
                       </TableCell>
@@ -272,26 +395,166 @@ const PrefeituraLinksAdminPage: React.FC = () => {
         )}
       </Paper>
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editing ? 'Editar prefeitura' : 'Nova prefeitura'}</DialogTitle>
-        <form onSubmit={handleSubmit}>
-          <DialogContent>
+      <Dialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        scroll="paper"
+        PaperProps={{ sx: { maxHeight: '90vh' } }}
+      >
+        <DialogTitle>
+          {editing ? 'Editar prefeitura' : 'Nova prefeitura (CNPJ + CNPJá)'}
+        </DialogTitle>
+        <form onSubmit={handleSubmit} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <DialogContent dividers sx={{ overflowY: 'auto' }}>
+            {!editing && (
+              <>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 1,
+                    mb: 2,
+                    alignItems: { xs: 'stretch', sm: 'flex-start' },
+                  }}
+                >
+                  <TextField
+                    margin="dense"
+                    label="CNPJ"
+                    fullWidth
+                    required
+                    value={formData.cnpj}
+                    onChange={(e) => {
+                      setLookup(null)
+                      setFormData((p) => ({ ...p, cnpj: formatCnpj(e.target.value) }))
+                    }}
+                    InputLabelProps={{ shrink: true }}
+                    inputProps={{
+                      autoComplete: 'off',
+                      inputMode: 'numeric',
+                      maxLength: 18,
+                    }}
+                    sx={{ ...dialogFieldSx, mb: { xs: 0, sm: 0 }, flex: 1 }}
+                  />
+                  <Button
+                    variant="outlined"
+                    startIcon={lookingUp ? <CircularProgress size={16} /> : <Search />}
+                    onClick={() => void handleLookup()}
+                    disabled={lookingUp || formData.cnpj.replace(/\D/g, '').length !== 14}
+                    sx={{
+                      mt: { xs: 0, sm: 1 },
+                      whiteSpace: 'nowrap',
+                      minWidth: { xs: '100%', sm: 140 },
+                      flexShrink: 0,
+                    }}
+                  >
+                    Consultar
+                  </Button>
+                </Box>
+
+                {lookup && (
+                  <Alert
+                    severity="info"
+                    sx={{
+                      mb: 2,
+                      alignItems: 'flex-start',
+                      '& .MuiAlert-message': {
+                        width: '100%',
+                        minWidth: 0,
+                        overflow: 'hidden',
+                      },
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight={700}
+                      sx={{ wordBreak: 'break-word' }}
+                    >
+                      {truncate(lookup.title, 90)}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                    >
+                      {[
+                        lookup.tradeName,
+                        lookup.registrationStatus,
+                        truncate(lookup.mainActivity, 80),
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      display="block"
+                      sx={{ mt: 0.5, wordBreak: 'break-word' }}
+                    >
+                      {[lookup.street, lookup.addressNumber, lookup.district, lookup.city, lookup.state]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      display="block"
+                      color="text.secondary"
+                      sx={{ mt: 1, wordBreak: 'break-word' }}
+                    >
+                      Dados CNPJá: razão social, fantasia, situação, CNAE e endereço.
+                    </Typography>
+                  </Alert>
+                )}
+              </>
+            )}
+
+            {editing && (
+              <TextField
+                margin="dense"
+                label="CNPJ"
+                fullWidth
+                disabled
+                value={formData.cnpj}
+                InputLabelProps={{ shrink: true }}
+                sx={dialogFieldSx}
+              />
+            )}
+
             <TextField
               margin="dense"
-              label="Nome da prefeitura"
+              label={editing ? 'Nova senha (opcional)' : 'Senha de acesso'}
+              type="password"
               fullWidth
-              required
-              value={formData.title}
-              onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
-              sx={{ mb: 2 }}
+              required={!editing}
+              value={formData.password}
+              onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ autoComplete: 'new-password' }}
+              sx={dialogFieldSx}
             />
             <TextField
               margin="dense"
-              label="Descrição"
+              label="Confirmar senha"
+              type="password"
               fullWidth
+              required={!editing || !!formData.password}
+              value={formData.passwordConfirm || ''}
+              onChange={(e) => setFormData((p) => ({ ...p, passwordConfirm: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ autoComplete: 'new-password' }}
+              sx={dialogFieldSx}
+            />
+
+            <TextField
+              margin="dense"
+              label="Descrição / observações"
+              fullWidth
+              multiline
+              minRows={2}
+              maxRows={5}
               value={formData.description || ''}
               onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))}
-              sx={{ mb: 2 }}
+              InputLabelProps={{ shrink: true }}
+              sx={{ ...dialogFieldSx, '& textarea': { wordBreak: 'break-word' } }}
             />
             <TextField
               margin="dense"
@@ -302,36 +565,46 @@ const PrefeituraLinksAdminPage: React.FC = () => {
               onChange={(e) =>
                 setFormData((p) => ({ ...p, order: parseInt(e.target.value, 10) || 0 }))
               }
-              sx={{ mb: 2 }}
+              InputLabelProps={{ shrink: true }}
+              sx={dialogFieldSx}
             />
-            <Button variant="outlined" component="label" sx={{ mb: 1 }}>
-              {formData.imageBase64 ? 'Trocar brasão / imagem' : 'Enviar brasão / imagem'}
-              <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
-            </Button>
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: 2,
+                mb: 2,
+              }}
+            >
+              <Button variant="outlined" component="label" sx={{ flexShrink: 0 }}>
+                {formData.imageBase64 ? 'Trocar brasão / imagem' : 'Enviar brasão / imagem'}
+                <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
+              </Button>
+              <FormControlLabel
+                sx={{ m: 0 }}
+                control={
+                  <Switch
+                    checked={formData.isActive ?? true}
+                    onChange={(e) => setFormData((p) => ({ ...p, isActive: e.target.checked }))}
+                  />
+                }
+                label="Ativo"
+              />
+            </Box>
             {formData.imageBase64 && (
               <Box
                 component="img"
                 src={formData.imageBase64}
                 alt="Prévia"
-                sx={{ display: 'block', maxHeight: 80, mb: 2 }}
+                sx={{ display: 'block', maxHeight: 80, maxWidth: '100%', mb: 2, objectFit: 'contain' }}
               />
             )}
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.isActive ?? true}
-                  onChange={(e) => setFormData((p) => ({ ...p, isActive: e.target.checked }))}
-                />
-              }
-              label="Ativo"
-            />
 
             <Divider sx={{ my: 2 }} />
             <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
               Sistemas liberados
-            </Typography>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
-              Só os sistemas marcados aparecem na página da prefeitura. URLs opcionais; se vazias, usa placeholder.
             </Typography>
 
             <FormControlLabel
@@ -348,10 +621,10 @@ const PrefeituraLinksAdminPage: React.FC = () => {
                 margin="dense"
                 label="URL PCA"
                 fullWidth
-                placeholder="https://pca.iarm.dev.br/login"
                 value={formData.urlPca || ''}
                 onChange={(e) => setFormData((p) => ({ ...p, urlPca: e.target.value }))}
-                sx={{ mb: 1.5 }}
+                InputLabelProps={{ shrink: true }}
+                sx={{ ...dialogFieldSx, mb: 1.5 }}
               />
             )}
 
@@ -367,12 +640,12 @@ const PrefeituraLinksAdminPage: React.FC = () => {
             {formData.allowRetencao && (
               <TextField
                 margin="dense"
-                label="URL Retenção (placeholder)"
+                label="URL Retenção"
                 fullWidth
-                placeholder="Em breve — deixe vazio"
                 value={formData.urlRetencao || ''}
                 onChange={(e) => setFormData((p) => ({ ...p, urlRetencao: e.target.value }))}
-                sx={{ mb: 1.5 }}
+                InputLabelProps={{ shrink: true }}
+                sx={{ ...dialogFieldSx, mb: 1.5 }}
               />
             )}
 
@@ -388,12 +661,12 @@ const PrefeituraLinksAdminPage: React.FC = () => {
             {formData.allowIa && (
               <TextField
                 margin="dense"
-                label="URL I.A (placeholder)"
+                label="URL I.A"
                 fullWidth
-                placeholder="Em breve — deixe vazio"
                 value={formData.urlIa || ''}
                 onChange={(e) => setFormData((p) => ({ ...p, urlIa: e.target.value }))}
-                sx={{ mb: 1 }}
+                InputLabelProps={{ shrink: true }}
+                sx={dialogFieldSx}
               />
             )}
           </DialogContent>

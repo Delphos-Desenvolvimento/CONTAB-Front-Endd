@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link as RouterLink, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   Alert,
   Box,
@@ -10,9 +10,11 @@ import {
   Typography,
   alpha,
 } from '@mui/material'
-import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ExternalLink, LogOut } from 'lucide-react'
 import {
+  getPrefeituraSession,
   getPublicPrefeituraById,
+  logoutPrefeitura,
   type PrefeituraLink,
 } from '../../API/prefeituraLinks'
 import {
@@ -41,7 +43,9 @@ function resolveUrl(pref: PrefeituraLink, system: PrefeituraSystemDef): string {
 
 export default function PrefeituraSistemasPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const prefId = Number(id)
+  const session = getPrefeituraSession()
   const [pref, setPref] = useState<PrefeituraLink | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -76,6 +80,10 @@ export default function PrefeituraSistemasPage() {
     }))
   }, [pref])
 
+  if (!session || session.id !== prefId) {
+    return <Navigate to="/prefeituras" replace />
+  }
+
   return (
     <Box
       sx={{
@@ -89,14 +97,18 @@ export default function PrefeituraSistemasPage() {
       }}
     >
       <Container maxWidth="md">
-        <Button
-          component={RouterLink}
-          to="/prefeituras"
-          startIcon={<ArrowLeft size={16} />}
-          sx={{ color: accent, textTransform: 'none', mb: 3 }}
-        >
-          Voltar às prefeituras
-        </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+          <Button
+            startIcon={<LogOut size={16} />}
+            onClick={() => {
+              logoutPrefeitura()
+              navigate('/prefeituras', { replace: true })
+            }}
+            sx={{ color: textMuted, textTransform: 'none' }}
+          >
+            Sair
+          </Button>
+        </Box>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -154,14 +166,22 @@ export default function PrefeituraSistemasPage() {
                 <Typography variant="overline" sx={{ color: accent, letterSpacing: '0.12em' }}>
                   Sistemas disponíveis
                 </Typography>
-                <Typography variant="h4" fontWeight={800} sx={{ color: '#f5f7ff', fontSize: { xs: '1.5rem', md: '2rem' } }}>
-                  {pref.title}
+                <Typography
+                  variant="h4"
+                  fontWeight={800}
+                  sx={{ color: '#f5f7ff', fontSize: { xs: '1.5rem', md: '2rem' } }}
+                >
+                  {pref.tradeName || pref.title}
                 </Typography>
-                {pref.description && (
-                  <Typography variant="body2" sx={{ color: textMuted, mt: 0.5 }}>
-                    {pref.description}
-                  </Typography>
-                )}
+                <Typography variant="body2" sx={{ color: textMuted, mt: 0.5 }}>
+                  {pref.title}
+                  {pref.cnpj
+                    ? ` · CNPJ ${pref.cnpj.replace(
+                        /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
+                        '$1.$2.$3/$4-$5',
+                      )}`
+                    : ''}
+                </Typography>
               </Box>
             </Box>
 

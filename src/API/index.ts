@@ -55,13 +55,22 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const cfg = error.config || {};
-    const shouldRetry = !cfg.__isRetry && (error.code === 'ECONNABORTED' || error.message === 'Network Error' || error.name === 'AxiosError');
+    const shouldRetry =
+      !cfg.__isRetry &&
+      (error.code === 'ECONNABORTED' || error.message === 'Network Error');
     if (shouldRetry) {
       cfg.__isRetry = true;
       const delay = 800 + Math.floor(Math.random() * 400);
-      return new Promise((resolve) => setTimeout(resolve, delay)).then(() => api.request(cfg));
+      return new Promise((resolve) => setTimeout(resolve, delay)).then(() =>
+        api.request(cfg),
+      );
     }
     if (error.response && error.response.status === 401) {
+      const reqUrl = (cfg.url || '').toString();
+      const onPrefeituraUi = window.location.pathname.startsWith('/prefeituras');
+      if (reqUrl.includes('/auth/prefeitura/login') || onPrefeituraUi) {
+        return Promise.reject(error);
+      }
       // Limpa token e dados do usuário
       localStorage.removeItem('token');
       localStorage.removeItem('user');
