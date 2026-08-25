@@ -32,6 +32,9 @@ export type PrefeituraLink = {
   urlPca?: string | null
   urlRetencao?: string | null
   urlIa?: string | null
+  descPca?: string | null
+  descRetencao?: string | null
+  descIa?: string | null
 }
 
 export type CnpjaLookupResult = {
@@ -71,6 +74,9 @@ export type CreatePrefeituraLinkDto = {
   urlPca?: string
   urlRetencao?: string
   urlIa?: string
+  descPca?: string
+  descRetencao?: string
+  descIa?: string
 }
 
 export type PrefeituraLoginResponse = {

@@ -12,6 +12,7 @@ const routes = [
   'admin',
   'admin/login',
   'admin/prefeituras',
+  'orgao',
   'prefeituras',
   'login',
   'noticias',

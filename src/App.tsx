@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { Box, CircularProgress } from '@mui/material';
@@ -20,6 +20,10 @@ import PrefeituraSistemasPage from './componnents/page/PrefeituraSistemasPage';
 import PublicLayout from './componnents/PublicLayout';
 import AccessibilityWidget from './componnents/common/AccessibilityWidget';
 
+function RedirectPrefeituraIdToOrgao() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? `/orgao/${id}` : '/orgao'} replace />;
+}
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const location = useLocation();
@@ -123,9 +127,11 @@ function App() {
                   <Route path="/noticia/:id" element={<NewsDetailPage />} />
                   <Route path="/equipe" element={<TeamPage />} />
                   <Route path="/links-uteis" element={<UsefulLinks />} />
-                  <Route path="/prefeituras" element={<PrefeiturasPage />} />
-                  <Route path="/prefeituras/:id" element={<PrefeituraSistemasPage />} />
-                  <Route path="/login" element={<Navigate to="/prefeituras" replace />} />
+                  <Route path="/orgao" element={<PrefeiturasPage />} />
+                  <Route path="/orgao/:id" element={<PrefeituraSistemasPage />} />
+                  <Route path="/prefeituras" element={<Navigate to="/orgao" replace />} />
+                  <Route path="/prefeituras/:id" element={<RedirectPrefeituraIdToOrgao />} />
+                  <Route path="/login" element={<Navigate to="/orgao" replace />} />
                 </Routes>
               </PublicLayout>
             }

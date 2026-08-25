@@ -314,13 +314,13 @@ function Header() {
               >
                 Contato
               </MenuButton>
-              <Box component={RouterLink} to="/prefeituras" sx={{ textDecoration: 'none' }}>
+              <Box component={RouterLink} to="/orgao" sx={{ textDecoration: 'none' }}>
                 <MenuButton
                   startIcon={<Building2 size={14} />}
-                  className={location.pathname.startsWith('/prefeituras') ? 'active' : ''}
+                  className={location.pathname.startsWith('/orgao') ? 'active' : ''}
                   sx={{ ml: 1, boxShadow: 'none', '&:hover': { boxShadow: 'none' } }}
                 >
-                  Prefeituras
+                  Órgão
                 </MenuButton>
               </Box>
             </Box>

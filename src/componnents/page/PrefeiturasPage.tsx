@@ -131,7 +131,7 @@ export default function PrefeiturasPage() {
       const data = await postPrefeituraLogin(digits, passwordRaw)
       localStorage.setItem(PREF_TOKEN_KEY, data.access_token)
       localStorage.setItem(PREF_DATA_KEY, JSON.stringify(data.prefeitura))
-      navigate(`/prefeituras/${data.prefeitura.id}`, { replace: true })
+      navigate(`/orgao/${data.prefeitura.id}`, { replace: true })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'CNPJ ou senha inválidos')
     } finally {
@@ -154,21 +154,14 @@ export default function PrefeiturasPage() {
       <Container maxWidth="sm">
         <Box textAlign="center" mb={4}>
           <Typography
-            variant="overline"
-            sx={{ color: accent, letterSpacing: '0.16em', fontWeight: 700 }}
-          >
-            Acesso
-          </Typography>
-          <Typography
             variant="h3"
             fontWeight={800}
             sx={{
               color: '#f5f7ff',
               fontSize: { xs: '1.85rem', md: '2.4rem' },
-              mt: 1,
             }}
           >
-            Login Prefeitura
+            Acesso
           </Typography>
           <Typography variant="body1" sx={{ color: textMuted, mt: 1.5 }}>
             Entre com o CNPJ e a senha cadastrados pelo administrador Contab.

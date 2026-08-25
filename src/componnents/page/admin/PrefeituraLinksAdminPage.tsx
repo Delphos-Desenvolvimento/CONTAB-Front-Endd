@@ -36,6 +36,14 @@ import {
   type CreatePrefeituraLinkDto,
   type PrefeituraLink,
 } from '../../../API/prefeituraLinks'
+import {
+  DEFAULT_SYSTEM_DESCRIPTIONS,
+  DEFAULT_SYSTEM_URLS,
+} from '../../../config/prefeituraSystems'
+import {
+  fileToStoredImageDataUrl,
+  normalizeImageSrc,
+} from '../../../utils/imageStorage'
 
 type FormState = CreatePrefeituraLinkDto & { passwordConfirm?: string }
 
@@ -50,9 +58,12 @@ const emptyForm = (): FormState => ({
   allowPca: true,
   allowRetencao: false,
   allowIa: false,
-  urlPca: 'https://pca.iarm.dev.br/login',
-  urlRetencao: '',
-  urlIa: '',
+  urlPca: DEFAULT_SYSTEM_URLS.pca,
+  urlRetencao: DEFAULT_SYSTEM_URLS.retencao,
+  urlIa: DEFAULT_SYSTEM_URLS.ia,
+  descPca: DEFAULT_SYSTEM_DESCRIPTIONS.pca,
+  descRetencao: DEFAULT_SYSTEM_DESCRIPTIONS.retencao,
+  descIa: DEFAULT_SYSTEM_DESCRIPTIONS.ia,
 })
 
 /** Avoid Chrome autofill green/yellow paint and label collisions in the dialog. */
@@ -116,15 +127,18 @@ const PrefeituraLinksAdminPage: React.FC = () => {
       passwordConfirm: '',
       title: link.title,
       description: link.description || '',
-      imageBase64: link.imageBase64 || '',
+      imageBase64: normalizeImageSrc(link.imageBase64) || '',
       order: link.order,
       isActive: link.isActive,
       allowPca: link.allowPca ?? true,
       allowRetencao: link.allowRetencao ?? false,
       allowIa: link.allowIa ?? false,
-      urlPca: link.urlPca || 'https://pca.iarm.dev.br/login',
-      urlRetencao: link.urlRetencao || '',
-      urlIa: link.urlIa || '',
+      urlPca: link.urlPca || DEFAULT_SYSTEM_URLS.pca,
+      urlRetencao: link.urlRetencao || DEFAULT_SYSTEM_URLS.retencao,
+      urlIa: link.urlIa || DEFAULT_SYSTEM_URLS.ia,
+      descPca: link.descPca || DEFAULT_SYSTEM_DESCRIPTIONS.pca,
+      descRetencao: link.descRetencao || DEFAULT_SYSTEM_DESCRIPTIONS.retencao,
+      descIa: link.descIa || DEFAULT_SYSTEM_DESCRIPTIONS.ia,
     })
     setOpenDialog(true)
   }
@@ -239,21 +253,19 @@ const PrefeituraLinksAdminPage: React.FC = () => {
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const input = e.target
+    const file = input.files?.[0]
+    input.value = ''
     if (!file) return
-    if (!file.type.startsWith('image/')) {
-      setError('Selecione uma imagem')
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Imagem muito grande (máx. 5MB)')
-      return
-    }
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setFormData((prev) => ({ ...prev, imageBase64: reader.result as string }))
-    }
-    reader.readAsDataURL(file)
+    setError('')
+    void (async () => {
+      try {
+        const imageBase64 = await fileToStoredImageDataUrl(file)
+        setFormData((prev) => ({ ...prev, imageBase64 }))
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Falha ao processar a imagem')
+      }
+    })()
   }
 
   const systemChips = (link: PrefeituraLink) => {
@@ -273,7 +285,7 @@ const PrefeituraLinksAdminPage: React.FC = () => {
               Prefeituras
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Cadastro por CNPJ (CNPJá) · login público em /prefeituras
+              Cadastro por CNPJ (CNPJá) · login público em /orgao
             </Typography>
           </Box>
           <Button variant="contained" startIcon={<Add />} onClick={openCreate}>
@@ -320,10 +332,10 @@ const PrefeituraLinksAdminPage: React.FC = () => {
                   links.map((link) => (
                     <TableRow key={link.id}>
                       <TableCell>
-                        {link.imageBase64 ? (
+                        {normalizeImageSrc(link.imageBase64) ? (
                           <Box
                             component="img"
-                            src={link.imageBase64}
+                            src={normalizeImageSrc(link.imageBase64)}
                             alt=""
                             sx={{ width: 40, height: 40, objectFit: 'contain' }}
                           />
@@ -582,6 +594,15 @@ const PrefeituraLinksAdminPage: React.FC = () => {
                 {formData.imageBase64 ? 'Trocar brasão / imagem' : 'Enviar brasão / imagem'}
                 <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
               </Button>
+              {formData.imageBase64 ? (
+                <Button
+                  color="inherit"
+                  onClick={() => setFormData((p) => ({ ...p, imageBase64: '' }))}
+                  sx={{ textTransform: 'none' }}
+                >
+                  Remover imagem
+                </Button>
+              ) : null}
               <FormControlLabel
                 sx={{ m: 0 }}
                 control={
@@ -593,14 +614,14 @@ const PrefeituraLinksAdminPage: React.FC = () => {
                 label="Ativo"
               />
             </Box>
-            {formData.imageBase64 && (
+            {formData.imageBase64 ? (
               <Box
                 component="img"
-                src={formData.imageBase64}
+                src={normalizeImageSrc(formData.imageBase64)}
                 alt="Prévia"
-                sx={{ display: 'block', maxHeight: 80, maxWidth: '100%', mb: 2, objectFit: 'contain' }}
+                sx={{ display: 'block', maxHeight: 96, maxWidth: '100%', mb: 2, objectFit: 'contain' }}
               />
-            )}
+            ) : null}
 
             <Divider sx={{ my: 2 }} />
             <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
@@ -617,15 +638,27 @@ const PrefeituraLinksAdminPage: React.FC = () => {
               label="PCA"
             />
             {formData.allowPca && (
-              <TextField
-                margin="dense"
-                label="URL PCA"
-                fullWidth
-                value={formData.urlPca || ''}
-                onChange={(e) => setFormData((p) => ({ ...p, urlPca: e.target.value }))}
-                InputLabelProps={{ shrink: true }}
-                sx={{ ...dialogFieldSx, mb: 1.5 }}
-              />
+              <>
+                <TextField
+                  margin="dense"
+                  label="URL PCA"
+                  fullWidth
+                  value={formData.urlPca || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, urlPca: e.target.value }))}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ ...dialogFieldSx, mb: 1 }}
+                />
+                <TextField
+                  margin="dense"
+                  label="Descrição PCA"
+                  fullWidth
+                  value={formData.descPca || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, descPca: e.target.value }))}
+                  InputLabelProps={{ shrink: true }}
+                  helperText="Texto exibido abaixo do nome do sistema na página de acesso"
+                  sx={{ ...dialogFieldSx, mb: 1.5 }}
+                />
+              </>
             )}
 
             <FormControlLabel
@@ -638,15 +671,29 @@ const PrefeituraLinksAdminPage: React.FC = () => {
               label="Retenção"
             />
             {formData.allowRetencao && (
-              <TextField
-                margin="dense"
-                label="URL Retenção"
-                fullWidth
-                value={formData.urlRetencao || ''}
-                onChange={(e) => setFormData((p) => ({ ...p, urlRetencao: e.target.value }))}
-                InputLabelProps={{ shrink: true }}
-                sx={{ ...dialogFieldSx, mb: 1.5 }}
-              />
+              <>
+                <TextField
+                  margin="dense"
+                  label="URL Retenção"
+                  fullWidth
+                  value={formData.urlRetencao || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, urlRetencao: e.target.value }))}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ ...dialogFieldSx, mb: 1 }}
+                />
+                <TextField
+                  margin="dense"
+                  label="Descrição Retenção"
+                  fullWidth
+                  value={formData.descRetencao || ''}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, descRetencao: e.target.value }))
+                  }
+                  InputLabelProps={{ shrink: true }}
+                  helperText="Texto exibido abaixo do nome do sistema na página de acesso"
+                  sx={{ ...dialogFieldSx, mb: 1.5 }}
+                />
+              </>
             )}
 
             <FormControlLabel
@@ -659,15 +706,27 @@ const PrefeituraLinksAdminPage: React.FC = () => {
               label="I.A"
             />
             {formData.allowIa && (
-              <TextField
-                margin="dense"
-                label="URL I.A"
-                fullWidth
-                value={formData.urlIa || ''}
-                onChange={(e) => setFormData((p) => ({ ...p, urlIa: e.target.value }))}
-                InputLabelProps={{ shrink: true }}
-                sx={dialogFieldSx}
-              />
+              <>
+                <TextField
+                  margin="dense"
+                  label="URL I.A"
+                  fullWidth
+                  value={formData.urlIa || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, urlIa: e.target.value }))}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ ...dialogFieldSx, mb: 1 }}
+                />
+                <TextField
+                  margin="dense"
+                  label="Descrição I.A"
+                  fullWidth
+                  value={formData.descIa || ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, descIa: e.target.value }))}
+                  InputLabelProps={{ shrink: true }}
+                  helperText="Texto exibido abaixo do nome do sistema na página de acesso"
+                  sx={dialogFieldSx}
+                />
+              </>
             )}
           </DialogContent>
           <DialogActions>

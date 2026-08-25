@@ -24,6 +24,7 @@ import {
 } from '@mui/material';
 import { Edit, Delete, Add, DragIndicator } from '@mui/icons-material';
 import { getAllLinksAdmin, createLink, updateLink, deleteLink, type Link, type CreateLinkDto } from '../../../API/content';
+import { fileToStoredImageDataUrl, normalizeImageSrc } from '../../../utils/imageStorage';
 
 const LinksAdminPage: React.FC = () => {
   const [links, setLinks] = useState<Link[]>([]);
@@ -158,30 +159,20 @@ const LinksAdminPage: React.FC = () => {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
+    input.value = '';
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError('Por favor, selecione apenas arquivos de imagem');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Imagem e muito grande');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData(prev => ({
-        ...prev,
-        imageBase64: reader.result as string
-      }));
-      setError('');
-    };
-    reader.readAsDataURL(file);
+    void (async () => {
+      try {
+        const imageBase64 = await fileToStoredImageDataUrl(file);
+        setFormData((prev) => ({ ...prev, imageBase64 }));
+        setError('');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Falha ao processar a imagem');
+      }
+    })();
   };
 
   const toggleActive = async (link: Link) => {
@@ -389,7 +380,7 @@ const LinksAdminPage: React.FC = () => {
               {formData.imageBase64 && (
                 <Box sx={{ textAlign: 'center', mb: 2 }}>
                   <img
-                    src={formData.imageBase64}
+                    src={normalizeImageSrc(formData.imageBase64)}
                     alt="Preview"
                     style={{
                       maxWidth: '200px',

@@ -67,7 +67,7 @@ api.interceptors.response.use(
     }
     if (error.response && error.response.status === 401) {
       const reqUrl = (cfg.url || '').toString();
-      const onPrefeituraUi = window.location.pathname.startsWith('/prefeituras');
+      const onPrefeituraUi = window.location.pathname.startsWith('/orgao');
       if (reqUrl.includes('/auth/prefeitura/login') || onPrefeituraUi) {
         return Promise.reject(error);
       }
