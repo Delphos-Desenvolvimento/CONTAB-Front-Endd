@@ -19,8 +19,10 @@ import { Phone, Link as LinkIcon, Building2 } from 'lucide-react';
 
 // Estilo personalizado para o AppBar
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  backgroundColor: theme.palette.background.paper,
-  boxShadow: theme.shadows[2],
+  backgroundColor: '#e8ebf0',
+  color: theme.palette.text.primary,
+  boxShadow: '0 1px 0 rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.06)',
+  borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
   backdropFilter: 'saturate(180%) blur(8px)',
   '& .MuiToolbar-root': {
     minHeight: '75px',
@@ -32,29 +34,33 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
   },
 }));
 
-// Estilo unificado: botões brancos com texto azul
+// Botões claros sobre o cinza do cabeçalho
 const MenuButton = styled(Button)(({ theme }) => ({
   borderRadius: 12,
   textTransform: 'none',
   fontWeight: 600,
   fontSize: '0.95rem',
   padding: '10px 20px',
-  backgroundColor: theme.palette.common.white,
+  backgroundColor: alpha('#fff', 0.72),
   color: theme.palette.primary.main,
   transition: 'all 0.2s ease',
   boxShadow: 'none',
   outline: 'none',
+  border: '1px solid rgba(15, 23, 42, 0.06)',
   '&:focus,&:focus-visible': {
     outline: 'none',
     boxShadow: 'none',
   },
   '&:hover': {
-    transform: 'translateY(-2px)',
+    transform: 'translateY(-1px)',
     boxShadow: 'none',
-    backgroundColor: theme.palette.common.white,
+    backgroundColor: '#ffffff',
+    borderColor: alpha(theme.palette.primary.main, 0.25),
   },
   '&.active': {
     color: theme.palette.primary.main,
+    backgroundColor: '#ffffff',
+    borderColor: alpha(theme.palette.primary.main, 0.35),
     boxShadow: 'none',
   },
 }));
@@ -138,7 +144,7 @@ function Header() {
       onClick: (e: React.MouseEvent) => scrollToSection(e, 'sobre')
     },
     {
-      title: 'Soluções',
+      title: 'Serviços',
       path: '/#solucoes',
       onClick: (e: React.MouseEvent) => scrollToSection(e, 'solucoes'),
       submenu: [
@@ -335,7 +341,7 @@ function Header() {
           top: 70,
           left: 0,
           right: 0,
-          backgroundColor: 'background.paper',
+          backgroundColor: '#e8ebf0',
           boxShadow: 3,
           zIndex: 1100,
           maxHeight: mobileOpen ? 'calc(100vh - 70px)' : 0,
