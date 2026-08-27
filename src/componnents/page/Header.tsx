@@ -320,7 +320,7 @@ function Header() {
                   className={location.pathname.startsWith('/orgao') ? 'active' : ''}
                   sx={{ ml: 1, boxShadow: 'none', '&:hover': { boxShadow: 'none' } }}
                 >
-                  Órgão
+                  Soluções
                 </MenuButton>
               </Box>
             </Box>

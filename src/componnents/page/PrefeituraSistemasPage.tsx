@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   Alert,
@@ -412,7 +412,7 @@ export default function PrefeituraSistemasPage() {
                         underline="none"
                         onClick={
                           isPlaceholder
-                            ? (e) => {
+                            ? (e: MouseEvent) => {
                                 e.preventDefault()
                               }
                             : undefined
